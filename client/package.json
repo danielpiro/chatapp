@@ -4,6 +4,28 @@
     "main": "./public/electron.js",
     "homepage": "./",
     "private": true,
+    "build": {
+        "appId": "com.yourcompany.chatapp",
+        "productName": "Chat App",
+        "files": [
+            "build/**/*",
+            "node_modules/**/*",
+            "electron.js"
+        ],
+        "win": {
+            "target": [
+                {
+                    "target": "portable",
+                    "arch": [
+                        "x64"
+                    ]
+                }
+            ]
+        },
+        "portable": {
+            "artifactName": "${productName}.exe"
+        }
+    },
     "dependencies": {
         "@emoji-mart/data": "^1.2.1",
         "@emoji-mart/react": "^1.1.1",
@@ -30,8 +52,8 @@
         "test": "react-scripts test",
         "eject": "react-scripts eject",
         "electron:serve": "node scripts/generatePort.js | set /p PORT= & npm run start",
-        "electron:build": "npm run build && electron-builder -c.extraMetadata.main=build/electron.js",
-        "electron:start": "wait-on tcp:$PORT && cross-env PORT=$PORT electron ."
+        "electron:build": "npm run build && electron-builder --config.directories.output=../release",
+        "electron:start": "electron ."
     },
     "eslintConfig": {
         "extends": [

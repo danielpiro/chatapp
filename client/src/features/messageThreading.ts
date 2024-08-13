@@ -1,5 +1,3 @@
-// src/features/messageThreading.ts
-
 export interface Message {
   id: string;
   sender: string;

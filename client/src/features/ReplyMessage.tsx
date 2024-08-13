@@ -1,5 +1,3 @@
-// src/components/ReplyMessage.tsx
-
 import React from 'react';
 import { Box, Typography } from '@mui/material';
 import { Message } from '../features/messageThreading';

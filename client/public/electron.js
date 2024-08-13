@@ -1,7 +1,8 @@
 const { app, BrowserWindow } = require("electron");
 const path = require("path");
-const isDev = app.isPackaged ? false : require("electron-is-dev");
-let port = process.env.PORT || 3000;
+const isDev = !app.isPackaged;
+
+const PORT = 8000;
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -9,22 +10,27 @@ function createWindow() {
     height: 600,
     webPreferences: {
       nodeIntegration: true,
+      contextIsolation: false,
     },
   });
 
-  win.loadURL(
-    isDev
-      ? `http://localhost:${process.env.PORT || 3000}`
-      : `file://${path.join(__dirname, "../build/index.html")}`
-  );
-}
-const userDataPath = path.join(
-  app.getPath("userData"),
-  `instance_${process.env.PORT || 3000}`
-);
+  const url = isDev
+    ? `http://localhost:3000`
+    : `file://${path.join(__dirname, "../build/index.html")}`;
 
-app.setPath("userData", userDataPath);
-app.whenReady().then(() => createWindow(process.env.PORT || 3000));
+  win.loadURL(url);
+
+  if (isDev) {
+    win.webContents.openDevTools();
+  }
+
+  // Pass the port to the renderer process
+  win.webContents.on("did-finish-load", () => {
+    win.webContents.send("app-port", PORT);
+  });
+}
+
+app.whenReady().then(createWindow);
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {

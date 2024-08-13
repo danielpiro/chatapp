@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TextField, List, ListItem, ListItemText, Typography } from '@mui/material';
+import { TextField, List, ListItem, ListItemText, Typography, Box, Divider, Avatar } from '@mui/material';
 
 interface Message {
   sender: string;
@@ -28,34 +28,47 @@ const MessageSearch: React.FC<MessageSearchProps> = ({ messages }) => {
   };
 
   return (
-    <div>
+    <Box sx={{ p: 2 }}>
       <TextField
         fullWidth
         variant="outlined"
         placeholder="Search messages..."
         value={searchTerm}
         onChange={handleSearch}
+        sx={{ mb: 2, borderRadius: 1 }}
       />
       {searchTerm && (
         <List>
-          {searchResults.map((message, index) => (
-            <ListItem key={index}>
-              <ListItemText
-                primary={<Typography variant="body2">{message.sender}</Typography>}
-                secondary={
-                  <>
-                    <Typography component="span" variant="body2" color="text.primary">
-                      {message.content}
+          {searchResults?.map((message, index) => (
+            <React.Fragment key={index}>
+              <ListItem alignItems="flex-start">
+                <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
+                  {message.sender.charAt(0).toUpperCase()}
+                </Avatar>
+                <ListItemText
+                  primary={
+                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                      {message.sender}
                     </Typography>
-                    {" — " + new Date(message.timestamp).toLocaleString()}
-                  </>
-                }
-              />
-            </ListItem>
+                  }
+                  secondary={
+                    <>
+                      <Typography variant="body2" color="text.secondary">
+                        {new Date(message.timestamp).toLocaleString()}
+                      </Typography>
+                      <Typography variant="body1" sx={{ mt: 0.5 }}>
+                        {message.content}
+                      </Typography>
+                    </>
+                  }
+                />
+              </ListItem>
+              {index < searchResults.length - 1 && <Divider component="li" />}
+            </React.Fragment>
           ))}
         </List>
       )}
-    </div>
+    </Box>
   );
 };
 

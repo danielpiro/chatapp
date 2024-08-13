@@ -1,4 +1,4 @@
-// src/features/userPresence.ts
+import { setupWebSocket } from "./websocketHandler";
 
 export interface User {
   name: string;
@@ -14,12 +14,10 @@ export const updateUserStatus = (
 };
 
 export const handleTyping = (
-  ws: WebSocket | null,
+  wsHandler: ReturnType<typeof setupWebSocket>,
   isTyping: boolean,
   setIsTyping: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
-  if (ws) {
-    ws.send(JSON.stringify({ type: "typing", status: isTyping }));
-  }
+  wsHandler.sendTypingStatus(isTyping);
   setIsTyping(isTyping);
 };

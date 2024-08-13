@@ -3,16 +3,16 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Box, TextField, Button, Typography, List, ListItem, 
   ListItemText, ListItemAvatar, Avatar, AppBar, Toolbar, 
-  IconButton, Popover, Snackbar
+  IconButton, Popover, Snackbar, Drawer
 } from '@mui/material';
-import { Brightness4, Brightness7, EmojiEmotions } from '@mui/icons-material';
+import { Brightness4, Brightness7, EmojiEmotions, Search } from '@mui/icons-material';
 import data from '@emoji-mart/data'
 import Picker from '@emoji-mart/react'
 import MessageSearch from '../features/MessageSearch';
 import ReplyMessage from '../features/ReplyMessage';
 import { Message, handleReply, createMessage } from '../features/messageThreading';
-import { User, updateUserStatus } from '../features/userPresence';
-import { setupWebSocket } from '../features/websocketHandler';
+import { User, handleTyping, updateUserStatus } from '../features/userPresence';
+import { setupWebSocket, WebSocketHandler } from '../features/websocketHandler';
 
 interface ChatProps {
   setDarkMode: React.Dispatch<React.SetStateAction<boolean>>;
@@ -26,26 +26,35 @@ const Chat: React.FC<ChatProps> = ({ setDarkMode }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [emojiAnchorEl, setEmojiAnchorEl] = useState<null | HTMLElement>(null);
   const [fileError, setFileError] = useState<string | null>(null);
-  const [wsHandler, setWsHandler] = useState<ReturnType<typeof setupWebSocket> | null>(null);
+  const [wsHandler, setWsHandler] = useState<WebSocketHandler | null>(null);
 
   const location = useLocation();
   const navigate = useNavigate();
   const { name, port } = location.state as { name: string; port: string };
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useEffect(() => {
     console.log('Connecting to WebSocket server...');
     const handler = setupWebSocket(
       `ws://localhost:${port}/ws/${name}`,
-      (message) => setMessages(prev => [...prev, message]),
-      (users) => updateUserStatus(users, name, 'online'),
-      (sender, isTyping) => {
-        if (isTyping) {
-          updateUserStatus(users, sender, 'typing');
-        } else {
-          updateUserStatus(users, sender, 'online');
-        }
+      (message) => {
+        console.log("Received message in Chat component:", message);
+        setMessages(prev => {
+          console.log("Previous messages:", prev);
+          const newMessages = [...prev, message];
+          console.log("New messages:", newMessages);
+          return newMessages;
+        });
+      },
+      (updatedUsers) => {
+        console.log("Received user status update:", updatedUsers);
+        setUsers(updatedUsers);
+      },
+      (sender, typing) => {
+        console.log("Received typing status:", sender, typing);
+        setUsers(prev => updateUserStatus(prev, sender, typing ? 'typing' : 'online'));
       }
     );
     setWsHandler(handler);
@@ -53,7 +62,7 @@ const Chat: React.FC<ChatProps> = ({ setDarkMode }) => {
     return () => {
       handler.close();
     };
-  }, [name, port, users]);
+  }, [name, port]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -61,7 +70,7 @@ const Chat: React.FC<ChatProps> = ({ setDarkMode }) => {
 
   useEffect(() => {
     if (wsHandler) {
-      wsHandler.sendTypingStatus(name, isTyping);
+      handleTyping(wsHandler, isTyping, setIsTyping);
     }
     
     if (typingTimeoutRef.current) {
@@ -70,9 +79,8 @@ const Chat: React.FC<ChatProps> = ({ setDarkMode }) => {
     
     typingTimeoutRef.current = setTimeout(() => {
       if (wsHandler) {
-        wsHandler.sendTypingStatus(name, false);
+        handleTyping(wsHandler, false, setIsTyping);
       }
-      setIsTyping(false);
     }, 2000);
 
     return () => {
@@ -113,6 +121,14 @@ const Chat: React.FC<ChatProps> = ({ setDarkMode }) => {
     setDarkMode((prevMode) => !prevMode);
   };
 
+  const toggleSearch = () => {
+    setIsSearchOpen(!isSearchOpen);
+  };
+
+  const openNewWindow = () => {
+    window.open(`${window.location.origin}${window.location.pathname}?name=${encodeURIComponent(name)}&port=${port}`, '_blank');
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <AppBar position="static">
@@ -120,48 +136,67 @@ const Chat: React.FC<ChatProps> = ({ setDarkMode }) => {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Chat Room
           </Typography>
-          <MessageSearch messages={messages} />
+          <IconButton color="inherit" onClick={toggleSearch}>
+            <Search />
+          </IconButton>
           <IconButton color="inherit" onClick={toggleDarkMode}>
             {localStorage.getItem('darkMode') === 'true' ? <Brightness7 /> : <Brightness4 />}
           </IconButton>
+          <Button color="inherit" onClick={openNewWindow}>New Window</Button>
           <Button color="inherit" onClick={handleQuit}>
             Quit
           </Button>
         </Toolbar>
       </AppBar>
-      <List sx={{ flexGrow: 1, overflow: 'auto', p: 2 }}>
-        {messages.map((message) => (
-          <ListItem key={message.id} alignItems="flex-start">
-            <ListItemAvatar>
-              <Avatar alt={message.sender} src={`https://api.dicebear.com/6.x/bottts/svg?seed=${encodeURIComponent(message.sender)}`} />
-            </ListItemAvatar>
-            <ListItemText
-              primary={
-                <Typography
-                  component="span"
-                  variant="body2"
-                  style={{ color: `#${message.sender.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0).toString(16).slice(-6)}`, fontWeight: 'bold' }}
-                >
-                  {message.sender}
-                </Typography>
-              }
-              secondary={
-                <>
-                  {message.replyTo && (
-                    <ReplyMessage replyToMessage={messages.find(m => m.id === message.replyTo)} />
-                  )}
-                  <Typography component="span" variant="body1" color="text.primary">
-                    {message.content}
+      <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
+        <List sx={{ flexGrow: 1, overflow: 'auto', p: 2 }}>
+          {messages.map((message) => (
+            <ListItem key={message.id} alignItems="flex-start">
+              <ListItemAvatar>
+                <Avatar alt={message.sender} src={`https://api.dicebear.com/6.x/bottts/svg?seed=${encodeURIComponent(message.sender)}`} />
+              </ListItemAvatar>
+              <ListItemText
+                primary={
+                  <Typography
+                    component="span"
+                    variant="body2"
+                    style={{ color: `#${message.sender.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0).toString(16).slice(-6)}`, fontWeight: 'bold' }}
+                  >
+                    {message.sender}
                   </Typography>
-                  {" — " + new Date(message.timestamp).toLocaleString()}
-                  <Button size="small" onClick={() => handleReply(message.id, setReplyingTo)}>Reply</Button>
-                </>
-              }
-            />
-          </ListItem>
-        ))}
-        <div ref={messagesEndRef} />
-      </List>
+                }
+                secondary={
+                  <>
+                    {message.replyTo && (
+                      <ReplyMessage replyToMessage={messages.find(m => m.id === message.replyTo)} />
+                    )}
+                    <Typography component="span" variant="body1" color="text.primary">
+                      {message.content}
+                    </Typography>
+                    {" — " + new Date(message.timestamp).toLocaleString()}
+                    <Button size="small" onClick={() => handleReply(message.id, setReplyingTo)}>Reply</Button>
+                  </>
+                }
+              />
+            </ListItem>
+          ))}
+          <div ref={messagesEndRef} />
+        </List>
+        <Drawer
+          anchor="right"
+          open={isSearchOpen}
+          onClose={toggleSearch}
+          sx={{
+            width: 300,
+            flexShrink: 0,
+            '& .MuiDrawer-paper': {
+              width: 300,
+            },
+          }}
+        >
+          <MessageSearch messages={messages} />
+        </Drawer>
+      </Box>
       <Box component="form" onSubmit={handleSendMessage} sx={{ p: 2, backgroundColor: 'background.default', display: 'flex', alignItems: 'center' }}>
         {replyingTo && (
           <ReplyMessage replyToMessage={messages.find(m => m.id === replyingTo)} />
