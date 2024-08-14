@@ -8,7 +8,6 @@ This project is a real-time chat application built with React, TypeScript, and F
 
 - Real-time messaging using WebSocket technology
 - Support for multiple chat instances
-- User presence indicators (online, offline, typing)
 - Message threading and reply functionality
 - Emoji support
 - Dark mode toggle
@@ -53,28 +52,22 @@ chat-app/
 ### Prerequisites
 
 - Node.js (v14 or later)
-- Python (v3.7 or later)
+- Python (v3.1 or later)
 - npm or yarn
 
 ### Server Setup
 
 1. Navigate to the `server` directory:
-
    ```
    cd server
    ```
-
 2. Create a virtual environment:
-
    ```
    python -m venv venv
    ```
-
 3. Activate the virtual environment:
-
    - On Windows: `venv\Scripts\activate`
    - On macOS/Linux: `source venv/bin/activate`
-
 4. Install the required packages:
    ```
    pip install -r requirements.txt
@@ -83,11 +76,9 @@ chat-app/
 ### Client Setup
 
 1. Navigate to the `client` directory:
-
    ```
    cd client
    ```
-
 2. Install dependencies:
    ```
    npm install
@@ -99,17 +90,15 @@ chat-app/
 
 1. In the `server` directory, with the virtual environment activated, run:
    ```
-   python server.py
+   python server.py <port>
    ```
 
 ### Start the Client
 
 1. In the `client` directory, run:
-
    ```
-   npm start
+   npm run electron:serve
    ```
-
 2. The application should open in your default web browser. If it doesn't, navigate to `http://localhost:3000`.
 
 ## Building for Production
@@ -127,6 +116,8 @@ To package the application as a desktop app using Electron:
    ```
    npm run electron:build
    ```
+2. This will create a `release` folder containing the packaged application.
+3. Inside the `release` folder, you will find a `Chat App.exe` file, which is the executable for the desktop application.
 
 ## Usage
 

@@ -11,7 +11,7 @@ import Picker from '@emoji-mart/react'
 import MessageSearch from '../features/MessageSearch';
 import ReplyMessage from '../features/ReplyMessage';
 import { Message, handleReply, createMessage } from '../features/messageThreading';
-import { User, handleTyping, updateUserStatus } from '../features/userPresence';
+import { User } from '../features/userPresence';
 import { setupWebSocket, WebSocketHandler } from '../features/websocketHandler';
 
 interface ChatProps {
@@ -51,10 +51,6 @@ const Chat: React.FC<ChatProps> = ({ setDarkMode }) => {
       (updatedUsers) => {
         console.log("Received user status update:", updatedUsers);
         setUsers(updatedUsers);
-      },
-      (sender, typing) => {
-        console.log("Received typing status:", sender, typing);
-        setUsers(prev => updateUserStatus(prev, sender, typing ? 'typing' : 'online'));
       }
     );
     setWsHandler(handler);
@@ -68,28 +64,6 @@ const Chat: React.FC<ChatProps> = ({ setDarkMode }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  useEffect(() => {
-    if (wsHandler) {
-      handleTyping(wsHandler, isTyping, setIsTyping);
-    }
-    
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-    
-    typingTimeoutRef.current = setTimeout(() => {
-      if (wsHandler) {
-        handleTyping(wsHandler, false, setIsTyping);
-      }
-    }, 2000);
-
-    return () => {
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-    };
-  }, [isTyping, wsHandler, name]);
-
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputMessage && wsHandler) {
@@ -102,7 +76,6 @@ const Chat: React.FC<ChatProps> = ({ setDarkMode }) => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputMessage(e.target.value);
-    setIsTyping(true);
   };
 
   const handleEmojiSelect = (emoji: any) => {

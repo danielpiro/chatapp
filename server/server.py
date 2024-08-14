@@ -33,7 +33,6 @@ class WebSocketMessage(BaseModel):
     type: str
     message: Optional[Message] = None
     sender: Optional[str] = None
-    status: Optional[bool] = None
 
 class ConnectionManager:
     def __init__(self):
@@ -157,10 +156,6 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                         ws_message.message.timestamp = str(datetime.datetime.now(pytz.timezone('Israel')).isoformat())
                     await manager.broadcast({"type": "message", "message": ws_message.message.dict()})
                     logger.info(f"Broadcasted message from client {client_id}: {ws_message.message.content}")
-                elif ws_message.type == 'typing':
-                    manager.user_statuses[client_id] = 'typing' if ws_message.status else 'online'
-                    await manager.broadcast_user_statuses()
-                    logger.info(f"Client {client_id} typing status updated to {manager.user_statuses[client_id]}")
             except asyncio.TimeoutError:
                 pass
             except Exception as e:

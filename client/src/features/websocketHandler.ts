@@ -2,24 +2,20 @@ import { Message } from "./messageThreading";
 import { User } from "./userPresence";
 
 export interface WebSocketMessage {
-  type: "message" | "userStatus" | "typing";
+  type: "message" | "userStatus";
   message?: Message;
   users?: User[];
-  sender?: string;
-  status?: boolean;
 }
 
 export interface WebSocketHandler {
   sendMessage: (message: Message) => void;
-  sendTypingStatus: (isTyping: boolean) => void;
   close: () => void;
 }
 
 export const setupWebSocket = (
   url: string,
   onMessage: (message: Message) => void,
-  onUserStatusUpdate: (users: User[]) => void,
-  onTypingStatusReceived: (sender: string, isTyping: boolean) => void
+  onUserStatusUpdate: (users: User[]) => void
 ) => {
   let ws: WebSocket | null = null;
   let reconnectAttempts = 0;
@@ -82,18 +78,6 @@ export const setupWebSocket = (
               console.warn("Received userStatus event with no users data");
             }
             break;
-          case "typing":
-            if (data.sender !== undefined && data.status !== undefined) {
-              console.log(
-                "Processing typing status:",
-                data.sender,
-                data.status
-              );
-              onTypingStatusReceived(data.sender, data.status);
-            } else {
-              console.warn("Received typing event with incomplete data");
-            }
-            break;
           default:
             console.warn("Unknown message type:", data.type);
         }
@@ -148,15 +132,6 @@ export const setupWebSocket = (
         ws.send(data);
       } else {
         console.error("WebSocket is not open. Cannot send message.");
-      }
-    },
-    sendTypingStatus: (isTyping: boolean) => {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        const data = JSON.stringify({ type: "typing", status: isTyping });
-        console.log("Sending typing status:", data);
-        ws.send(data);
-      } else {
-        console.error("WebSocket is not open. Cannot send typing status.");
       }
     },
     close: () => {
