@@ -118,6 +118,7 @@ To package the application as a desktop app using Electron:
    ```
 2. This will create a `release` folder containing the packaged application.
 3. Inside the `release` folder, you will find a `Chat App.exe` file, which is the executable for the desktop application.
+4. You can create new instance of application by clicking on "New Window" button.
 
 ## Usage
 
