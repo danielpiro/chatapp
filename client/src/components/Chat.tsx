@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Box, TextField, Button, Typography, List, ListItem, 
   ListItemText, ListItemAvatar, Avatar, AppBar, Toolbar, 
-  IconButton, Popover, Snackbar, Drawer
+  IconButton, Popover, Drawer
 } from '@mui/material';
 import { Brightness4, Brightness7, EmojiEmotions, Search } from '@mui/icons-material';
 import data from '@emoji-mart/data'
@@ -11,7 +11,6 @@ import Picker from '@emoji-mart/react'
 import MessageSearch from '../features/MessageSearch';
 import ReplyMessage from '../features/ReplyMessage';
 import { Message, handleReply, createMessage } from '../features/messageThreading';
-import { User } from '../features/userPresence';
 import { setupWebSocket, WebSocketHandler } from '../features/websocketHandler';
 
 interface ChatProps {
@@ -22,17 +21,13 @@ const Chat: React.FC<ChatProps> = ({ setDarkMode }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
-  const [isTyping, setIsTyping] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
   const [emojiAnchorEl, setEmojiAnchorEl] = useState<null | HTMLElement>(null);
-  const [fileError, setFileError] = useState<string | null>(null);
   const [wsHandler, setWsHandler] = useState<WebSocketHandler | null>(null);
 
   const location = useLocation();
   const navigate = useNavigate();
   const { name, port } = location.state as { name: string; port: string };
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useEffect(() => {
@@ -48,10 +43,6 @@ const Chat: React.FC<ChatProps> = ({ setDarkMode }) => {
           return newMessages;
         });
       },
-      (updatedUsers) => {
-        console.log("Received user status update:", updatedUsers);
-        setUsers(updatedUsers);
-      }
     );
     setWsHandler(handler);
 
@@ -123,7 +114,7 @@ const Chat: React.FC<ChatProps> = ({ setDarkMode }) => {
       </AppBar>
       <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
         <List sx={{ flexGrow: 1, overflow: 'auto', p: 2 }}>
-          {messages.map((message) => (
+          {messages?.map((message) => (
             <ListItem key={message.id} alignItems="flex-start">
               <ListItemAvatar>
                 <Avatar alt={message.sender} src={`https://api.dicebear.com/6.x/bottts/svg?seed=${encodeURIComponent(message.sender)}`} />
@@ -204,12 +195,6 @@ const Chat: React.FC<ChatProps> = ({ setDarkMode }) => {
       >
         <Picker data={data} onEmojiSelect={handleEmojiSelect} />
       </Popover>
-      <Snackbar
-        open={!!fileError}
-        autoHideDuration={6000}
-        onClose={() => setFileError(null)}
-        message={fileError}
-      />
     </Box>
   );
 };

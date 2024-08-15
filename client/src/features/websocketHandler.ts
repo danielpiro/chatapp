@@ -1,10 +1,8 @@
 import { Message } from "./messageThreading";
-import { User } from "./userPresence";
 
 export interface WebSocketMessage {
   type: "message" | "userStatus";
   message?: Message;
-  users?: User[];
 }
 
 export interface WebSocketHandler {
@@ -14,8 +12,7 @@ export interface WebSocketHandler {
 
 export const setupWebSocket = (
   url: string,
-  onMessage: (message: Message) => void,
-  onUserStatusUpdate: (users: User[]) => void
+  onMessage: (message: Message) => void
 ) => {
   let ws: WebSocket | null = null;
   let reconnectAttempts = 0;
@@ -70,14 +67,6 @@ export const setupWebSocket = (
               console.warn("Received message event with no message data");
             }
             break;
-          case "userStatus":
-            if (data.users) {
-              console.log("Processing user status update:", data.users);
-              onUserStatusUpdate(data.users);
-            } else {
-              console.warn("Received userStatus event with no users data");
-            }
-            break;
           default:
             console.warn("Unknown message type:", data.type);
         }
@@ -88,25 +77,22 @@ export const setupWebSocket = (
 
     ws.onclose = (event) => {
       console.log("WebSocket connection closed:", event.code, event.reason);
-      if (event.code === 1000) {
-        console.log("WebSocket connection closed gracefully");
-      } else {
-        console.log("WebSocket connection closed unexpectedly");
+      if (event.code === 1006) {
         if (reconnectAttempts < maxReconnectAttempts) {
           reconnectAttempts++;
-          const timeout = Math.pow(2, reconnectAttempts) * 1000;
+          const reconnectDelay = Math.pow(2, reconnectAttempts) * 1000;
           console.log(
-            `Reconnecting in ${
-              timeout / 1000
-            } seconds (attempt ${reconnectAttempts} of ${maxReconnectAttempts})`
+            `Reconnecting in ${reconnectDelay}ms (attempt ${reconnectAttempts} of ${maxReconnectAttempts})`
           );
-          reconnectTimeout = setTimeout(connect, timeout);
+          reconnectTimeout = setTimeout(() => {
+            connect();
+          }, reconnectDelay);
         } else {
-          console.log(
-            `Exceeded maximum number of reconnection attempts (${maxReconnectAttempts}). Giving up.`
-          );
+          console.error("Maximum number of reconnect attempts reached");
           isConnecting = false;
         }
+      } else {
+        isConnecting = false;
       }
     };
 
