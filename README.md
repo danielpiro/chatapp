@@ -1,5 +1,7 @@
 # Multi-Instance Chat Application
 
+![Chat Application Demo](chatapp.gif)
+
 ## Overview
 
 This project is a real-time chat application built with React, TypeScript, and FastAPI. It supports multiple chat instances, allowing users to communicate in real-time across different windows or devices.
